@@ -1,0 +1,213 @@
+(base) ➜  phase2 psql postgres
+psql (14.1)
+Type "help" for help.
+
+postgres=# -- A) Load schema and data --------------------------------------------------------------------------------
+postgres=# \i schema.ddl
+psql:schema.ddl:1: NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to type speedrun.regiondomain
+drop cascades to table speedrun.country
+drop cascades to table speedrun.player
+drop cascades to table speedrun.game
+drop cascades to table speedrun.runtype
+drop cascades to table speedrun.run
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE DOMAIN
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# \COPY Country FROM Country.csv with csv
+COPY 244
+postgres=# \COPY Player FROM Player.csv with csv
+COPY 4030
+postgres=# \COPY Game FROM Game.csv with csv
+COPY 28947
+postgres=# \COPY RunType FROM RunType.csv with csv
+COPY 1203
+postgres=# \COPY Run FROM Run.csv with csv
+COPY 21998
+postgres=# -- B) Display info for every table --------------------------------------------------------------------------------
+postgres=# \d Country
+                       Table "speedrun.country"
+   Column    |          Type          | Collation | Nullable | Default
+-------------+------------------------+-----------+----------+---------
+ countryname | character varying(255) |           | not null |
+ cid         | character(2)           |           | not null |
+Indexes:
+    "country_pkey" PRIMARY KEY, btree (cid)
+Referenced by:
+    TABLE "player" CONSTRAINT "player_cid_fkey" FOREIGN KEY (cid) REFERENCES country(cid)
+
+postgres=# \d Player
+                       Table "speedrun.player"
+   Column   |          Type          | Collation | Nullable | Default
+------------+------------------------+-----------+----------+---------
+ pid        | character varying(255) |           | not null |
+ playername | character varying(255) |           | not null |
+ cid        | character(2)           |           | not null |
+Indexes:
+    "player_pkey" PRIMARY KEY, btree (pid)
+Foreign-key constraints:
+    "player_cid_fkey" FOREIGN KEY (cid) REFERENCES country(cid)
+Referenced by:
+    TABLE "run" CONSTRAINT "run_eid_fkey" FOREIGN KEY (eid) REFERENCES player(pid)
+    TABLE "run" CONSTRAINT "run_pid_fkey" FOREIGN KEY (pid) REFERENCES player(pid)
+
+postgres=# \d Game
+                        Table "speedrun.game"
+   Column   |          Type          | Collation | Nullable | Default
+------------+------------------------+-----------+----------+---------
+ gid        | character varying(255) |           | not null |
+ gamename   | character varying(255) |           | not null |
+ regionname | regiondomain           |           | not null |
+Indexes:
+    "game_pkey" PRIMARY KEY, btree (gid, regionname)
+Referenced by:
+    TABLE "run" CONSTRAINT "run_gid_regionname_fkey" FOREIGN KEY (gid, regionname) REFERENCES game(gid, regionname)
+
+postgres=# \d RunType
+                       Table "speedrun.runtype"
+   Column    |          Type          | Collation | Nullable | Default
+-------------+------------------------+-----------+----------+---------
+ runtypeid   | character varying(255) |           | not null |
+ runtypename | character varying(255) |           | not null |
+Indexes:
+    "runtype_pkey" PRIMARY KEY, btree (runtypeid)
+Referenced by:
+    TABLE "run" CONSTRAINT "run_runtypeid_fkey" FOREIGN KEY (runtypeid) REFERENCES runtype(runtypeid)
+
+postgres=# \d Run
+                           Table "speedrun.run"
+     Column     |          Type          | Collation | Nullable | Default
+----------------+------------------------+-----------+----------+---------
+ runid          | character varying(255) |           | not null |
+ runtypeid      | character varying(255) |           | not null |
+ gid            | character varying(255) |           | not null |
+ duration       | double precision       |           | not null |
+ submissiondate | date                   |           | not null |
+ isemulated     | boolean                |           | not null |
+ eid            | character varying(255) |           | not null |
+ regionname     | regiondomain           |           | not null |
+ pid            | character varying(255) |           | not null |
+Indexes:
+    "run_pkey" PRIMARY KEY, btree (runid)
+Check constraints:
+    "positiveduration" CHECK (duration >= 0::double precision)
+Foreign-key constraints:
+    "run_eid_fkey" FOREIGN KEY (eid) REFERENCES player(pid)
+    "run_gid_regionname_fkey" FOREIGN KEY (gid, regionname) REFERENCES game(gid, regionname)
+    "run_pid_fkey" FOREIGN KEY (pid) REFERENCES player(pid)
+    "run_runtypeid_fkey" FOREIGN KEY (runtypeid) REFERENCES runtype(runtypeid)
+
+postgres=# -- C) Count the number of rows in each table --------------------------------------------------------------------------------
+postgres=# SELECT count(*) FROM Country;
+ count
+-------
+   244
+(1 row)
+
+postgres=# SELECT count(*) FROM Player;
+ count
+-------
+  4030
+(1 row)
+
+postgres=# SELECT count(*) FROM Game;
+ count
+-------
+ 28947
+(1 row)
+
+postgres=# SELECT count(*) FROM RunType;
+ count
+-------
+  1203
+(1 row)
+
+postgres=# SELECT count(*) FROM Run;
+ count
+-------
+ 21998
+(1 row)
+
+postgres=# -- D) Show a sample of rows in each table --------------------------------------------------------------------------------
+postgres=# SELECT * FROM Country LIMIT 10 OFFSET 100;
+        countryname        | cid
+---------------------------+-----
+ Indonesia                 | id
+ Iran, Islamic Republic of | ir
+ Iraq                      | iq
+ Ireland                   | ie
+ Isle of Man               | im
+ Israel                    | il
+ Italy                     | it
+ Jamaica                   | jm
+ Japan                     | jp
+ Jersey                    | je
+(10 rows)
+
+postgres=# SELECT * FROM Player LIMIT 10 OFFSET 100;
+   pid    |  playername   | cid
+----------+---------------+-----
+ 86v0k73j | Iontayst      | ar
+ 48gewpjp | Zibang        | fi
+ j03qqkrj | duck68        | us
+ 1xy5q3w8 | Spenito       | ca
+ 48gmzrp8 | Alexual       | us
+ 8qr091wj | DrewPag       | us
+ 48gre37x | poppenheim    | jp
+ 18voo6vx | KiddlesP      | ca
+ 98rp1y3j | RadioGaming   | ca
+ v817kkq8 | Gnarly_Turtle | us
+(10 rows)
+
+postgres=# SELECT * FROM Game LIMIT 10 OFFSET 100;
+   gid    |             gamename             | regionname
+----------+----------------------------------+------------
+ 4d794jn1 | 150,000 B.C.                     | USA / NTSC
+ 4d794jn1 | 150,000 B.C.                     | EUR / PAL
+ 4d794jn1 | 150,000 B.C.                     | JPN / NTSC
+ 4d794jn1 | 150,000 B.C.                     | CHN / PAL
+ 4d794jn1 | 150,000 B.C.                     | KOR / NTSC
+ 4d794jn1 | 150,000 B.C.                     | BRA / PAL
+ o1y90ov6 | 16t                              | JPN / NTSC
+ 268e9776 | 18 Wheeler: American Pro Trucker | USA / NTSC
+ 268e9776 | 18 Wheeler: American Pro Trucker | EUR / PAL
+ 268e9776 | 18 Wheeler: American Pro Trucker | JPN / NTSC
+(10 rows)
+
+postgres=# SELECT * FROM RunType LIMIT 10 OFFSET 100;
+ runtypeid |          runtypename
+-----------+-------------------------------
+ w20155kn  | Any% No Reset Warps (JP)
+ jdz5lvdv  | Air Ride All Tracks
+ zd3rvndn  | Golden Axe
+ xk9l666k  | Any% (SuperGrafx)
+ 02qgo8yd  | RCT1%
+ mkero09d  | Ending 3
+ xk9ngxg2  | 3 Crowns
+ n2yoxoed  | PC (3D) Any%
+ z278wok0  | Any%
+ jdzprrgk  | Any% Princess Only, All-Stars
+(10 rows)
+
+postgres=# SELECT * FROM Run LIMIT 10 OFFSET 100;
+  runid   | runtypeid |   gid    | duration | submissiondate | isemulated |   eid    | regionname |   pid
+----------+-----------+----------+----------+----------------+------------+----------+------------+----------
+ 8y850rwy | ndx1n52q  | 3698y3dl |  2763.46 | 2017-03-19     | t          | 1xy5ww8r | JPN / NTSC | 7j4q94lx
+ 8y85v15y | ndx1n52q  | 3698y3dl |  3536.64 | 2017-03-14     | t          | 1xy5ww8r | JPN / NTSC | 7j4q94lx
+ 7ylg0dxm | ndx1n52q  | 3698y3dl |  2158.78 | 2017-03-12     | t          | 1xy5ww8r | JPN / NTSC | pj025m8w
+ 8yvd326y | ndx1n52q  | 3698y3dl |  2356.89 | 2017-02-21     | t          | 1xy5ww8r | USA / NTSC | e8ekl2p8
+ nz140egz | 9kvynokg  | 3698y3dl |      582 | 2017-02-16     | t          | y8d365x6 | USA / NTSC | e8ekl2p8
+ dy44l93y | ndx1n52q  | 3698y3dl |   2702.1 | 2017-02-12     | t          | 1xy5ww8r | USA / NTSC | e8ekl2p8
+ pzg15j0z | 9kvynokg  | 3698y3dl |   617.86 | 2017-01-29     | t          | 1xy5ww8r | USA / NTSC | e8ekl2p8
+ wzpvve8z | 9kvynokg  | 3698y3dl |    591.8 | 2017-01-28     | t          | 1xy5ww8r | USA / NTSC | dx339eex
+ 6yjew3dm | 9kvynokg  | 3698y3dl |      591 | 2016-10-27     | t          | 1xy5ww8r | USA / NTSC | 0jml3y81
+ emkodk3z | 9kvynokg  | 3698y3dl |      618 | 2016-10-23     | f          | v18q90jn | USA / NTSC | 0jml3y81
+(10 rows)
+
+postgres=#
