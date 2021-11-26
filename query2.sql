@@ -13,6 +13,8 @@ DROP VIEW IF EXISTS AllAvgMonthlyRunTimes CASCADE;
 
 DROP VIEW IF EXISTS GameIds CASCADE;
 
+DROP VIEW IF EXISTS Leaderboard CASCADE;
+
 CREATE VIEW YearMonthRun AS
 SELECT
     RUNID,
@@ -240,5 +242,90 @@ GROUP BY
 ORDER BY
     year1;
 
------------
+--------------------------------------------------------------------------------
+-- How many attempts on average does it take to get a world record?
+-- NOTE: limitation is that the number one people currently are the world record holders
+CREATE VIEW Leaderboard AS
+SELECT
+    DISTINCT t.runid,
+    p.pid,
+    p.playerName,
+    g.gameName,
+    g.gid,
+    t.regionName,
+    t.runTypeId,
+    t.duration,
+    t.submissionDate,
+    t.rnk
+FROM
+    (
+        SELECT
+            runid,
+            pid,
+            gid,
+            regionName,
+            runTypeId,
+            duration,
+            submissionDate,
+            RANK() OVER (
+                PARTITION BY gid,
+                regionName,
+                runTypeId
+                ORDER BY
+                    duration
+            ) AS rnk
+        FROM
+            Run
+    ) t
+    JOIN Player p ON t.pid = p.pid
+    JOIN Game g ON t.gid = g.gid
+ORDER BY
+    gameName,
+    regionName,
+    runTypeId,
+    rnk;
+
+-- get all the number one people
+CREATE VIEW RankOnes AS
+SELECT
+    *
+FROM
+    Leaderboard
+WHERE
+    rnk = 1;
+
+CREATE VIEW NumAttemptsBeforeRankOne AS
+SELECT
+    l.pid,
+    l.gameName,
+    l.regionName,
+    l.runTypeId,
+    COUNT(*) AS cnt
+FROM
+    RankOnes r
+    JOIN Leaderboard l ON (
+        r.pid = l.pid
+        AND r.gid = l.gid
+        AND r.regionname = l.regionname
+        AND r.runtypeid = l.runtypeid
+        AND l.submissiondate < r.submissiondate
+        AND r.runid != l.runid
+    )
+GROUP BY
+    l.pid,
+    l.gameName,
+    l.regionname,
+    l.runtypeid
+ORDER BY
+    l.pid;
+
+-- This is lower than we expect because these are runs that speedrunners
+-- are willing to submit, _NOT_ all the runs they've ever done.
+-- Naturally, this is a limitation because it depends on the runner
+-- if they want to submit the speed run or not.
+CREATE VIEW AverageNumAttemptsBeforeRankOne AS
+SELECT
+    AVG(cnt) AS avgNumAttempsBeforeRankOneNum
+FROM
+    NumAttemptsBeforeRankOne;
 
