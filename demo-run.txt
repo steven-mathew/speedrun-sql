@@ -1,0 +1,28 @@
+-- A) Load schema and data --------------------------------------------------------------------------------
+\i schema.ddl
+\COPY Country FROM Country.csv with csv
+\COPY Player FROM Player.csv with csv
+\COPY Game FROM Game.csv with csv
+\COPY RunType FROM RunType.csv with csv
+\COPY Run FROM Run.csv with csv
+
+-- B) Display info for every table --------------------------------------------------------------------------------
+\d Country
+\d Player
+\d Game
+\d RunType
+\d Run
+
+-- C) Count the number of rows in each table --------------------------------------------------------------------------------
+SELECT count(*) FROM Country;
+SELECT count(*) FROM Player;
+SELECT count(*) FROM Game;
+SELECT count(*) FROM RunType;
+SELECT count(*) FROM Run;
+
+-- D) Show a sample of rows in each table --------------------------------------------------------------------------------
+SELECT * FROM Country LIMIT 10 OFFSET 100;
+SELECT * FROM Player LIMIT 10 OFFSET 100;
+SELECT * FROM Game LIMIT 10 OFFSET 100;
+SELECT * FROM RunType LIMIT 10 OFFSET 100;
+SELECT * FROM Run LIMIT 10 OFFSET 100;
